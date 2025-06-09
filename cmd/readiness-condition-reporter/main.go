@@ -37,7 +37,8 @@ func main() {
 
 	checkEndpoint := os.Getenv("CHECK_ENDPOINT")
 	if checkEndpoint == "" {
-		checkEndpoint = "http://localhost:8080/health" // Default endpoint
+		fmt.Fprintf(os.Stderr, "CHECK_ENDPOINT environment variable not set\n")
+		os.Exit(1)
 	}
 
 	checkInterval := os.Getenv("CHECK_INTERVAL")

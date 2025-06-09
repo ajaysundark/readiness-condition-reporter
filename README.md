@@ -4,8 +4,26 @@ The readiness-condition-reporter is a library for publishing component-readiness
 
 Here's how it could be integrated as a side-car container:
 
-```
-<TODO>
+```yaml
+# readiness-condition-reporter sidecar
+spec:
+  template:
+    spec:
+      serviceAccountName: node-status-patcher-sa
+      initContainers:
+      - name: readiness-reporter
+        image: ghcr.io/ajaysundark/readiness-condition-reporter:0.1.0
+        env:
+        - name: NODE_NAME # injected from downward api
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: CHECK_ENDPOINT
+          value: "http://localhost:8080/health"
+        - name: CONDITION_TYPE
+          value: "COMPONENT_READY" # condition-type to update
+        - name: CHECK_INTERVAL
+          value: "15s"
 ```
 
 ## Community, discussion, contribution, and support
