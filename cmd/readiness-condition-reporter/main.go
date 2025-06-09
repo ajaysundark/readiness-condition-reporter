@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -92,17 +92,28 @@ func main() {
 func checkHealth(endpoint string) (*HealthResponse, error) {
 	resp, err := http.Get(endpoint)
 	if err != nil {
-		return nil, err
+		return &HealthResponse{
+			Healthy: false,
+			Reason:  "EndpointConnectionError",
+			Message: fmt.Sprintf("Failed to reach endpoint %s: %v", endpoint, err),
+		}, nil
 	}
 	defer resp.Body.Close()
 
-	var health HealthResponse
-	err = json.NewDecoder(resp.Body).Decode(&health)
-	if err != nil {
-		return nil, err
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+		return &HealthResponse{Healthy: true, Reason: "EndpointOK", Message: fmt.Sprintf("Endpoint reports ready at %s", endpoint)}, nil
 	}
 
-	return &health, nil
+	bodyBytes, err := io.ReadAll(resp.Body)
+	bodyString := ""
+	if err == nil {
+		bodyString = string(bodyBytes)
+	}
+	return &HealthResponse{
+		Healthy: false,
+		Reason:  "EndpointNotReady",
+		Message: fmt.Sprintf("Endpoint returned non-2xx status at %s: %s", endpoint, bodyString),
+	}, nil
 }
 
 // updateNodeCondition updates the node condition based on health check
